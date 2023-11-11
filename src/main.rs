@@ -7,7 +7,6 @@ struct Student {
     name: String,
     age: u32,
     class_id: u64,
-    club_ids: HashSet<u64>,
     course_enrollments: HashSet<CourseEnrollment>, // 多对多关系：学生和课程
     club_memberships: HashSet<ClubMembership>,     // 多对多关系：学生和社团
 }
@@ -64,7 +63,6 @@ impl StudentManagementSystem {
             name,
             age,
             class_id,
-            club_ids: HashSet::new(),
             course_enrollments: HashSet::new(),
             club_memberships: HashSet::new(),
         };
@@ -200,6 +198,26 @@ impl StudentManagementSystem {
                 student.club_memberships.remove(&membership);
             }
         }
+
+        // 学生和班级关联操作
+        fn assign_student_to_class(&mut self, student_id: u64, class_id: u64) {
+            if let Some(student) = self.students.get_mut(&student_id) {
+                student.class_id = class_id;
+                if let Some(class) = self.classes.get_mut(&class_id) {
+                    class.students.insert(student_id);
+                }
+            }
+        }
+
+        fn unassign_student_from_class(&mut self, student_id: u64) {
+            if let Some(student) = self.students.get_mut(&student_id) {
+                let class_id = student.class_id;
+                student.class_id = 0; // 0 表示未分配班级
+                if let Some(class) = self.classes.get_mut(&class_id) {
+                    class.students.remove(&student_id);
+                }
+            }
+        }
 }
 
 fn main() {
@@ -236,6 +254,16 @@ fn main() {
     // 输出学生和社团关联后的信息
     println!("\nState after joining club:");
     println!("Student 1: {:?}", system.read_student(1));
+
+    // 学生和班级关联操作
+    system.assign_student_to_class(1, 201);
+
+    // 输出学生和班级关联后的信息
+    println!("\nState after assigning student to class:");
+    println!("Student 1: {:?}", system.read_student(1));
+    println!("Class 201: {:?}", system.read_class(201));
+
+
 
     // // 更新学生、社团、班级、课程信息
     // system.update_student(1, "Alicia".to_string(), 21);
